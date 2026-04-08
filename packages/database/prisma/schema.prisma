@@ -1,0 +1,98 @@
+generator client { provider = "prisma-client-js" }
+datasource db { provider = "postgresql" url = env("DATABASE_URL") }
+
+enum UserRole { MORADOR SINDICO ADMIN PORTARIA }
+enum TicketStatus { ABERTO EM_ANDAMENTO AGUARDANDO_PECA CONCLUIDO CANCELADO }
+enum ReservationStatus { PENDENTE APROVADA RECUSADA CANCELADA }
+
+model User {
+  id           String    @id @default(uuid())
+  fullName     String
+  email        String    @unique
+  phone        String?
+  passwordHash String    @map("password_hash")
+  role         UserRole  @default(MORADOR)
+  apartmentId  String?
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  tickets      Ticket[]
+  announcements Announcement[]
+  reservations Reservation[]
+  payments     Payment[]
+  auditLogs    AuditLog[]
+  @@map("users")
+}
+
+model Ticket {
+  id          String       @id @default(uuid())
+  protocol    String       @unique
+  userId      String
+  category    String
+  subject     String
+  description String?
+  location    String?
+  priority    String       @default("media")
+  status      TicketStatus @default(ABERTO)
+  assignedTo  String?
+  createdAt   DateTime     @default(now())
+  resolvedAt  DateTime?
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@map("tickets")
+}
+
+model Announcement {
+  id          String   @id @default(uuid())
+  title       String
+  content     String
+  priority    String
+  authorId    String
+  publishedAt DateTime @default(now())
+  expiresAt   DateTime?
+  author      User     @relation(fields: [authorId], references: [id])
+  @@map("announcements")
+}
+
+model Reservation {
+  id            String            @id @default(uuid())
+  userId        String
+  areaName      String
+  reservationDate DateTime
+  startTime     String
+  endTime       String
+  guestsCount   Int
+  status        ReservationStatus @default(PENDENTE)
+  notes         String?
+  createdAt     DateTime          @default(now())
+  user          User              @relation(fields: [userId], references: [id])
+  @@unique([areaName, reservationDate, startTime, endTime])
+  @@map("reservations")
+}
+
+model Payment {
+  id                String   @id @default(uuid())
+  userId            String
+  referenceMonth    String
+  amount            Decimal
+  dueDate           DateTime
+  status            String   @default("pendente")
+  externalRef       String?
+  paidAt            DateTime?
+  boletoUrl         String?
+  pixQrCode         String?
+  user              User     @relation(fields: [userId], references: [id])
+  @@map("payments")
+}
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  userId       String?
+  action       String
+  resourceType String?
+  resourceId   String?
+  ipAddress    String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+  user         User?    @relation(fields: [userId], references: [id])
+  @@map("audit_logs")
+}

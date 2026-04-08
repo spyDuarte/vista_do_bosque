@@ -1,0 +1,7 @@
+{
+  "name": "@vista/shared",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/index.ts",
+  "dependencies": { "zod": "^3.22.0" }
+}
